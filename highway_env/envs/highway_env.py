@@ -42,7 +42,7 @@ class HighwayEnv(AbstractEnv):
                 # zero for other lanes.
                 "high_speed_reward": 0.4,  # The reward received when driving at full speed, linearly mapped to zero for
                 # lower speeds according to config["reward_speed_range"].
-                "lane_change_reward": 0,  # The reward received at each lane change action.
+                "lane_change_reward": -0.2,  # The reward received at each lane change action.
                 "reward_speed_range": [20, 30],
                 "normalize_reward": True,
                 "offroad_terminal": False,
@@ -105,8 +105,10 @@ class HighwayEnv(AbstractEnv):
         if self.config["normalize_reward"]:
             reward = utils.lmap(
                 reward,
+
+                # the range of speed changes from this new range
                 [
-                    self.config["collision_reward"],
+                    self.config["collision_reward"] + self.config["lane_change_reward"],
                     self.config["high_speed_reward"] + self.config["right_lane_reward"],
                 ],
                 [0, 1],
@@ -131,6 +133,8 @@ class HighwayEnv(AbstractEnv):
             "right_lane_reward": lane / max(len(neighbours) - 1, 1),
             "high_speed_reward": np.clip(scaled_speed, 0, 1),
             "on_road_reward": float(self.vehicle.on_road),
+            # if the lane changes, then it returns 1
+            "lane_change_reward": action in [0, 2],
         }
 
     def _is_terminated(self) -> bool:
